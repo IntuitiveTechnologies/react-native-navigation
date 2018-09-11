@@ -44,15 +44,18 @@ import com.reactnativenavigation.views.SideMenu.Side;
 
 import java.util.List;
 
-public class NavigationActivity extends AppCompatActivity implements DefaultHardwareBackBtnHandler, Subscriber, PermissionAwareActivity {
+public class NavigationActivity extends AppCompatActivity
+        implements DefaultHardwareBackBtnHandler, Subscriber, PermissionAwareActivity {
 
     /**
-     * Although we start multiple activities, we make sure to pass Intent.CLEAR_TASK | Intent.NEW_TASK
-     * So that we actually have only 1 instance of the activity running at one time.
-     * We hold the currentActivity (resume->pause) so we know when we need to destroy the javascript context
-     * (when currentActivity is null, ie pause and destroy was called without resume).
-     * This is somewhat weird, and in the future we better use a single activity with changing contentView similar to ReactNative impl.
-     * Along with that, we should handle commands from the bridge using onNewIntent
+     * Although we start multiple activities, we make sure to pass Intent.CLEAR_TASK
+     * | Intent.NEW_TASK So that we actually have only 1 instance of the activity
+     * running at one time. We hold the currentActivity (resume->pause) so we know
+     * when we need to destroy the javascript context (when currentActivity is null,
+     * ie pause and destroy was called without resume). This is somewhat weird, and
+     * in the future we better use a single activity with changing contentView
+     * similar to ReactNative impl. Along with that, we should handle commands from
+     * the bridge using onNewIntent
      */
     static NavigationActivity currentActivity;
     private static Promise startAppPromise;
@@ -63,12 +66,14 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
     @Nullable
     private PermissionListener mPermissionListener;
 
+    boolean killedBySystem = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (!NavigationApplication.instance.getReactGateway().hasStartedCreatingContext() ||
-                getIntent() == null ||
-                getIntent().getBundleExtra("ACTIVITY_PARAMS_BUNDLE") == null) {
+        if (!NavigationApplication.instance.getReactGateway().hasStartedCreatingContext() || getIntent() == null
+                || getIntent().getBundleExtra("ACTIVITY_PARAMS_BUNDLE") == null) {
+            killedBySystem = true;
             SplashActivity.start(this);
             finish();
             return;
@@ -103,18 +108,19 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
         }
         String rootBackgroundImageName = getRootBackgroundImageName();
         if (rootBackgroundImageName != null) {
-            layout.asView().setBackgroundResource(this.getResources().getIdentifier(rootBackgroundImageName, "drawable", this.getPackageName()));
+            layout.asView().setBackgroundResource(
+                    this.getResources().getIdentifier(rootBackgroundImageName, "drawable", this.getPackageName()));
         }
         setContentView(layout.asView());
     }
 
     private String getRootBackgroundImageName() {
-        return activityParams.screenParams == null ? null : activityParams.screenParams.styleParams.rootBackgroundImageName;
+        return activityParams.screenParams == null ? null
+                : activityParams.screenParams.styleParams.rootBackgroundImageName;
     }
 
     private boolean hasBackgroundColor() {
-        return AppStyle.appStyle.screenBackgroundColor != null &&
-                AppStyle.appStyle.screenBackgroundColor.hasColor();
+        return AppStyle.appStyle.screenBackgroundColor != null && AppStyle.appStyle.screenBackgroundColor.hasColor();
     }
 
     @Override
@@ -196,6 +202,10 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
     }
 
     private void destroyJsIfNeeded() {
+        if (killedBySystem) {
+            return;
+        }
+
         if (currentActivity == null || currentActivity.isFinishing()) {
             getReactGateway().onDestroyApp(this);
         }
@@ -277,8 +287,10 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
 
     void showModal(ScreenParams screenParams) {
         Screen previousScreen = layout.getCurrentScreen();
-        NavigationApplication.instance.getEventEmitter().sendWillDisappearEvent(previousScreen.getScreenParams(), NavigationType.ShowModal);
-        NavigationApplication.instance.getEventEmitter().sendDidDisappearEvent(previousScreen.getScreenParams(), NavigationType.ShowModal);
+        NavigationApplication.instance.getEventEmitter().sendWillDisappearEvent(previousScreen.getScreenParams(),
+                NavigationType.ShowModal);
+        NavigationApplication.instance.getEventEmitter().sendDidDisappearEvent(previousScreen.getScreenParams(),
+                NavigationType.ShowModal);
         modalController.showModal(screenParams);
     }
 
@@ -298,7 +310,7 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
         layout.dismissLightBox();
     }
 
-    //TODO all these setters should be combined to something like setStyle
+    // TODO all these setters should be combined to something like setStyle
     void setTopBarVisible(String screenInstanceId, boolean hidden, boolean animated) {
         layout.setTopBarVisible(screenInstanceId, hidden, animated);
         modalController.setTopBarVisible(screenInstanceId, hidden, animated);
@@ -320,12 +332,14 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
         modalController.setTitleBarSubtitle(screenInstanceId, subtitle);
     }
 
-    void setTitleBarButtons(String screenInstanceId, String navigatorEventId, List<TitleBarButtonParams> titleBarButtons) {
+    void setTitleBarButtons(String screenInstanceId, String navigatorEventId,
+            List<TitleBarButtonParams> titleBarButtons) {
         layout.setTitleBarRightButtons(screenInstanceId, navigatorEventId, titleBarButtons);
         modalController.setTitleBarRightButtons(screenInstanceId, navigatorEventId, titleBarButtons);
     }
 
-    void setTitleBarLeftButton(String screenInstanceId, String navigatorEventId, TitleBarLeftButtonParams titleBarLeftButton) {
+    void setTitleBarLeftButton(String screenInstanceId, String navigatorEventId,
+            TitleBarLeftButtonParams titleBarLeftButton) {
         layout.setTitleBarLeftButton(screenInstanceId, navigatorEventId, titleBarLeftButton);
         modalController.setTitleBarLeftButton(screenInstanceId, navigatorEventId, titleBarLeftButton);
     }
@@ -465,7 +479,8 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
                 layout.destroy();
                 modalController.destroy();
 
-                Object devSupportManager = ReflectionUtils.getDeclaredField(getReactGateway().getReactInstanceManager(), "mDevSupportManager");
+                Object devSupportManager = ReflectionUtils.getDeclaredField(getReactGateway().getReactInstanceManager(),
+                        "mDevSupportManager");
                 if (ReflectionUtils.getDeclaredField(devSupportManager, "mRedBoxDialog") != null) { // RN >= 0.52
                     ReflectionUtils.setField(devSupportManager, "mRedBoxDialog", null);
                 }
@@ -480,19 +495,24 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        NavigationApplication.instance.getActivityCallbacks().onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (mPermissionListener != null && mPermissionListener.onRequestPermissionsResult(requestCode, permissions, grantResults)) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+            @NonNull int[] grantResults) {
+        NavigationApplication.instance.getActivityCallbacks().onRequestPermissionsResult(requestCode, permissions,
+                grantResults);
+        if (mPermissionListener != null
+                && mPermissionListener.onRequestPermissionsResult(requestCode, permissions, grantResults)) {
             mPermissionListener = null;
         }
     }
 
     public String getCurrentlyVisibleScreenId() {
-        return modalController.isShowing() ? modalController.getCurrentlyVisibleScreenId() : layout.getCurrentlyVisibleScreenId();
+        return modalController.isShowing() ? modalController.getCurrentlyVisibleScreenId()
+                : layout.getCurrentlyVisibleScreenId();
     }
 
     public String getCurrentlyVisibleEventId() {
-        return modalController.isShowing() ? modalController.getCurrentlyVisibleEventId() : layout.getCurrentScreen().getNavigatorEventId();
+        return modalController.isShowing() ? modalController.getCurrentlyVisibleEventId()
+                : layout.getCurrentScreen().getNavigatorEventId();
     }
 
     public static void setStartAppPromise(Promise promise) {
