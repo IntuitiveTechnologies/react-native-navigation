@@ -67,17 +67,17 @@ public class Navigator extends ParentController {
 
     public Navigator(final Activity activity, ChildControllersRegistry childRegistry, ModalStack modalStack, OverlayManager overlayManager, RootPresenter rootPresenter) {
         super(activity, childRegistry,"navigator" + CompatUtils.generateViewId(), new Presenter(activity, new Options()), new Options());
-        //this.modalStack = modalStack;
-        //this.overlayManager = overlayManager;
+        this.modalStack = modalStack;
+        this.overlayManager = overlayManager;
         this.rootPresenter = rootPresenter;
         rootLayout = new FrameLayout(getActivity());
-        //modalsLayout = new FrameLayout(getActivity());
-        //overlaysLayout = new FrameLayout(getActivity());
+        modalsLayout = new FrameLayout(getActivity());
+        overlaysLayout = new FrameLayout(getActivity());
     }
 
     public void bindViews() {
-        //modalStack.setModalsLayout(modalsLayout);
-        //modalStack.setRootLayout(rootLayout);
+        modalStack.setModalsLayout(modalsLayout);
+        modalStack.setRootLayout(rootLayout);
         rootPresenter.setRootContainer(rootLayout);
     }
 

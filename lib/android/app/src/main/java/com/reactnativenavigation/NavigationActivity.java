@@ -34,7 +34,7 @@ public class NavigationActivity extends AppCompatActivity implements DefaultHard
         super.onCreate(savedInstanceState);
         addDefaultSplashLayout();
         navigator = new Navigator(this, new ChildControllersRegistry(), new ModalStack(this), new OverlayManager(), new RootPresenter(this));
-        // navigator.bindViews();
+        navigator.bindViews();
         getReactGateway().onActivityCreated(this);
     }
 
